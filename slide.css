@@ -1,0 +1,15 @@
+.slideshow-container {
+    position: relative;
+    width: 75%;
+    height: 300px; /* Adjust height as needed */
+  }
+  
+  .slide {
+    display: none;
+  }
+  
+  .slide img {
+    width:75%;
+    height: medium;
+  }
+  
