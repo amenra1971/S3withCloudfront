@@ -66,11 +66,39 @@ resource "aws_s3_bucket_object" "s3class1971" {
   etag         = filemd5("./${each.key}")
 }
 
+# Create an OAI for the S3 bucket and CloudFront distribution
+resource "aws_cloudfront_origin_access_identity" "oai" {
+  comment = "OAI for restricting access to S3 bucket"
 
+  # Add any other desired configurations for the OAI
+}
+
+# Update the S3 bucket policy to allow access from the OAI
+resource "aws_s3_bucket_policy" "s3_bucket_oai_policy" {
+  bucket = aws_s3_bucket.static_website.id
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          AWS = aws_cloudfront_origin_access_identity.oai.iam_arn
+        },
+        Action = "s3:GetObject",
+        Resource = "${aws_s3_bucket.static_website.arn}/*"
+      }
+    ]
+  })
+}
+
+# Update the CloudFront distribution to use the OAI as the Origin Access Identity
 resource "aws_cloudfront_distribution" "cdn" {
   origin {
     domain_name = aws_s3_bucket.static_website.bucket_regional_domain_name
     origin_id   = "S3-${aws_s3_bucket.static_website.id}"
+    s3_origin_config {
+      origin_access_identity = aws_cloudfront_origin_access_identity.oai.cloudfront_access_identity_path
+    }
   }
 
   enabled             = true
@@ -111,3 +139,4 @@ resource "aws_cloudfront_distribution" "cdn" {
 output "cloudfront_url" {
   value = aws_cloudfront_distribution.cdn.domain_name
 }
+
